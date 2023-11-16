@@ -1,0 +1,229 @@
+---
+title: "Assignment 4"
+author: "Isaac Davis"
+output: pdf_document
+date: "`r format( Sys.time(),  '%B %d, %Y' )`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set( echo = TRUE )
+library( tidyverse ) 
+library( stringr )  
+library( refinr )  
+library( lubridate )
+```
+
+## 13.1
+1.  A common task is to take a set of data that has multiple categorical 
+    variables and create a table of the number of cases for each combination.
+    An introductory statistics textbook contains a dataset summarizing student
+    surveys from several sections of an intro class. The two variables of
+    interest for us are `Gender` and `Year` which are the students gender and
+    year in college.
+### 13.1.a
+    a)  Download the dataset and correctly order the `Year` variable using the
+        following:
+```{r}
+Survey <- read.csv('https://www.lock5stat.com/datasets3e/StudentSurvey.csv', na.strings=c('',' '))
+Survey
+```
+### 13.1.b
+    b)  Using some combination of `dplyr` functions, produce a data set with
+        eight rows that contains the number of responses for each gender:year
+        combination. Make sure your table orders the `Year` variable in the
+        correct order of `First Year`, `Sophmore`, `Junior`, and then `Senior`.
+        *You might want to look at the following functions: `dplyr::count` and*
+        *`dplyr::drop_na`.* 
+```{r}
+yearSex <- Survey %>%
+  drop_na() %>%
+  count( Year, Sex ) %>%
+  arrange( "Senior" ) %>%
+  arrange( "Junior" ) %>%
+  arrange( "Sophmore" ) %>%
+  arrange( "FirstYear" )
+yearSex
+```
+### 13.1.c
+    c)  Using `tidyr` commands, produce a table of the number of responses in
+        the following form:
+        
+        |   Gender    |  First Year  |  Sophmore  |  Junior   |  Senior   |
+        |:-----------:|:------------:|:----------:|:---------:|:---------:|
+        |  **Female** |              |            |           |           |  
+        |  **Male**   |              |            |           |           | 
+```{r}
+yearSexTable <- table( Survey$Sex, Survey$Year )
+yearSexTableOrdered <- cbind( yearSexTable[,1], yearSexTable[,4], yearSexTable[,2], yearSexTable[,3] )
+colnames( yearSexTableOrdered ) = c("FirstYear", "Sophmore", "Junior", "Senior")
+yearSexTableOrdered
+```
+
+## 13.2
+2.  From the book website, there is a .csv file of the daily maximum temperature
+    in Flagstaff at the Pulliam Airport. The direction link is at:
+    [https://raw.githubusercontent.com/dereksonderegger/444/master/data-raw/FlagMaxTemp.csv](https://raw.githubusercontent.com/dereksonderegger/444/master/data-raw/FlagMaxTemp.csv)
+### 13.2.a
+    a)  Create a line graph that gives the daily maximum temperature for 2005.
+        *Make sure the x-axis is a date and covers the whole year.*
+```{r}
+Data <- read.csv('https://raw.githubusercontent.com/dereksonderegger/444/master/data-raw/FlagMaxTemp.csv')
+dateTemp <- Data %>% 
+  filter(Year==2005) %>% 
+  pivot_longer( X1:X31, names_to='Day', values_to='Temp' ) %>% 
+  select(Year, Month, Day, Temp) %>% 
+  mutate(Date=make_date(year=Year, month=Month, day=str_sub(Day, start=2, end=-1))) %>%
+  select('Date', 'Temp') %>%
+  drop_na()
+ggplot( dateTemp, aes(x=Date, y=Temp) ) +
+  geom_line()
+```
+### 13.2.b
+    b)  Create a line graph that gives the monthly average maximum temperature
+        for 2013 - 2015. *Again the x-axis should be the date and the axis*
+        *spans 3 years.*
+```{r}
+```
+
+## 13.4
+3. For this problem we will consider two simple data sets.
+```{r, eval=FALSE}
+A <- tribble(
+  ~Name, ~Car,
+  'Alice', 'Ford F150',
+  'Bob',   'Tesla Model III',
+  'Charlie', 'VW Bug')
+
+B <- tribble(
+  ~First.Name, ~Pet,
+  'Bob',  'Cat',
+  'Charlie', 'Dog',
+  'Alice', 'Rabbit')
+```
+### 13.4.a
+    a)  Squish the data frames together to generate a data set with three rows
+        and three columns. Do two ways: first using `cbind` and then using one
+        of the `dplyr` `join` commands.
+```{r}
+```
+### 13.4.b
+    b)  It turns out that Alice also has a pet guinea pig. Add another row to
+        the `B` data set. Do this using either the base function `rbind`, or
+        either of the `dplyr` functions `add_row` or `bind_rows`.
+```{r}
+```
+### 13.4.c
+    c)  Squish the `A` and `B` data sets together to generate a data set with
+        four rows and three columns. Do this two ways: first using `cbind` and
+        then using one of the `dplyr` `join` commands. Which was easier to
+        program? Which is more likely to have an error.
+```{r}
+```
+
+## 13.5
+4.  Data table joins are extremely common because effective database design
+    almost always involves having multiple tables for different types of objects.
+    To illustrate both the table joins and the usefulness of multiple tables we
+    will develop a set of data frames that will represent a credit card company's
+    customer data base. We will have tables for Customers, Retailers, Cards, and
+    Transactions.  Below is code that will create and populate these tables.
+```{r}
+Customers <- tribble(
+  ~PersonID, ~Name, ~Street, ~City, ~State,
+  1, 'Derek Sonderegger',  '231 River Run', 'Flagstaff', 'AZ',
+  2, 'Aubrey Sonderegger', '231 River Run', 'Flagstaff', 'AZ',
+  3, 'Robert Buscaglia', '754 Forest Heights', 'Flagstaff', 'AZ',
+  4, 'Roy St Laurent', '845 Elk View', 'Flagstaff', 'AZ')
+
+Retailers <- tribble(
+  ~RetailID, ~Name, ~Street, ~City, ~State,
+  1, 'Kickstand Kafe', '719 N Humphreys St', 'Flagstaff', 'AZ',
+  2, 'MartAnnes', '112 E Route 66', 'Flagstaff', 'AZ',
+  3, 'REI', '323 S Windsor Ln', 'Flagstaff', 'AZ' )
+
+Cards <- tribble(
+  ~CardID, ~PersonID, ~Issue_DateTime, ~Exp_DateTime,
+  '9876768717278723',  1,  '2019-9-20 0:00:00', '2022-9-20 0:00:00',
+  '5628927579821287',  2,  '2019-9-20 0:00:00', '2022-9-20 0:00:00',
+  '7295825498122734',  3,  '2019-9-28 0:00:00', '2022-9-28 0:00:00',
+  '8723768965231926',  4,  '2019-9-30 0:00:00', '2022-9-30 0:00:00' ) 
+
+Transactions <- tribble(
+  ~CardID, ~RetailID, ~DateTime, ~Amount,
+  '9876768717278723', 1, '2019-10-1 8:31:23',    5.68,
+  '7295825498122734', 2, '2019-10-1 12:45:45',  25.67,
+  '9876768717278723', 1, '2019-10-2 8:26:31',    5.68,
+  '9876768717278723', 1, '2019-10-2 8:30:09',    9.23,
+  '5628927579821287', 3, '2019-10-5 18:58:57',  68.54,
+  '7295825498122734', 2, '2019-10-5 12:39:26',  31.84,
+  '8723768965231926', 2, '2019-10-10 19:02:20', 42.83) 
+
+Cards <- Cards %>% 
+  mutate( Issue_DateTime = lubridate::ymd_hms(Issue_DateTime),
+          Exp_DateTime   = lubridate::ymd_hms(Exp_DateTime) )
+Transactions <- Transactions %>% 
+  mutate( DateTime = lubridate::ymd_hms(DateTime))
+```
+### 13.5.a
+    a)  Create a table that gives the credit card statement for Derek. It should
+        give all the transactions, the amounts, and the store name. Write your
+        code as if the only initial information you have is the customer's name.
+        *Hint: Do a bunch of table joins, and then filter for the desired customer*
+        *name. To be efficient, do the filtering first and then do the table joins.*
+```{r}
+```
+### 13.5.b
+    b)  Aubrey has lost her credit card on Oct 15, 2019. Close her credit card at
+        4:28:21 PM and issue her a new credit card in the `Cards` table.
+        *Hint: Using the Aubrey's name, get necessary CardID and PersonID and save*
+        *those as `cardID` and `personID`. Then update the `Cards` table row that*
+        *corresponds to the `cardID` so that the expiration date is set to the time*
+        *that the card is closed. Then insert a new row with the `personID` for*
+        *Aubrey and a new `CardID` number that you make up.* 
+```{r}
+```
+### 13.5.c
+    c)  Aubrey is using her new card at Kickstand Kafe on Oct 16, 2019 at
+        2:30:21 PM for coffee with a charge of $4.98. Generate a new transaction
+        for this action. 
+        *Hint: create temporary variables `card`,`retailid`,`datetime`, and*
+        *`amount` that contain the information for this transaction and then*
+        *write your code to use those. This way in the next question you can just*
+        *use the same code but modify the temporary variables. Alternatively, you*
+        *could write a function that takes in these four values and manipulates the*
+        *tables in the GLOBAL environment using the `<<-` command to assign a result*
+        *to a variable defined in the global environment. The reason this is OK is*
+        *that in a real situation, these data would be stored in a database and we*
+        *would expect the function to update that database.*
+```{r}
+```
+### 13.5.d
+    d)  On Oct 17, 2019, some nefarious person is trying to use her OLD credit
+        card at REI. Make sure your code in part (c) first checks to see if the
+        credit card is active before creating a new transaction. Using the same
+        code, verify that the nefarious transaction at REI is denied.
+        *Hint: your check ought to look something like this:*
+```{r, eval=FALSE}
+card <- '9876768717278723'
+retailid <- 2
+datetime <- ymd_hms('2019-10-16 14:30:21')
+amount <- 4.98
+
+# If the card is currently valid, this should return exactly 1 row.
+Valid_Cards <- Cards %>% 
+  filter(CardID == card, Issue_DateTime <= datetime, datetime <= Exp_DateTime)
+
+# If the transaction is valid, insert the transaction into the table
+if( nrow(Valid_Cards) == 1){
+  # Some code to insert the transaction
+}else{
+  print('Card Denied')
+}
+```
+### 13.5.e
+    e)  Generate a table that gives the credit card statement for Aubrey. It
+        should give all the transactions, amounts, and retailer name for both
+        credit cards she had during this period.
+```{r}
+```
+
